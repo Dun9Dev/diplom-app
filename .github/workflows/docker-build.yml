@@ -17,10 +17,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to Yandex Cloud Container Registry
-        uses: yc-actions/yc-cr-login@v1
-        with:
-          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON }}
+      - name: Login to Yandex Cloud Container Registry
+        run: |
+          echo "${{ secrets.YC_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
 
       - name: Build Docker image
         run: docker build -t cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} .
