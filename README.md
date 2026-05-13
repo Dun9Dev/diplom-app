@@ -25,3 +25,4 @@ docker push cr.yandex/<registry-id>/diplom-app:latest
 
 - v1.0.0 - initial release
 
+# test

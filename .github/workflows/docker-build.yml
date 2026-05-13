@@ -1,0 +1,44 @@
+name: Build and Deploy to Yandex Cloud
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY_ID: crpvtth2thuc5g5660q5
+  IMAGE_NAME: diplom-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Yandex Cloud Container Registry
+        uses: yc-actions/yc-cr-login@v1
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON }}
+
+      - name: Build Docker image
+        run: docker build -t cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} .
+
+      - name: Push Docker image
+        run: docker push cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+      - name: Setup kubectl
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          kubectl set image deployment/diplom-app app=cr.yandex/${{ env.REGISTRY_ID }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
